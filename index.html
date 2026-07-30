@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rudra AI</title>
+    <title>Rudra AI - Multi-Modal Assistant</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #0f172a; color: #fff; }
@@ -17,6 +17,24 @@
         }
         .header-title { font-size: 1.2rem; font-weight: bold; }
         .icon-btn { background: none; border: none; color: white; font-size: 1.4rem; cursor: pointer; }
+
+        /* Speaker Control Button Animation */
+        .speaker-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%; width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        .speaking-active {
+            background: #ef4444 !important;
+            box-shadow: 0 0 12px #ef4444;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
 
         /* Sidebar for Chat History */
         .sidebar {
@@ -32,34 +50,54 @@
         .history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .history-item { padding: 10px; background: #334155; border-radius: 6px; cursor: pointer; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .chat-box { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 80px; }
+        .chat-box { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 90px; }
         .message { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 0.95rem; line-height: 1.5; word-wrap: break-word; }
         .user-message { align-self: flex-end; background: #2563eb; color: #ffffff; border-bottom-right-radius: 2px; }
         .ai-message { align-self: flex-start; background: #1e293b; color: #f1f5f9; border-bottom-left-radius: 2px; border: 1px solid #334155; }
+
+        /* Generated AI Image Display */
+        .generated-img {
+            width: 100%;
+            max-width: 280px;
+            border-radius: 12px;
+            margin-top: 10px;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            display: block;
+        }
+
+        /* Google Maps Button Inside Chat */
+        .map-btn {
+            display: inline-block; margin-top: 10px; padding: 8px 14px; background: #10b981;
+            color: #fff; text-decoration: none; border-radius: 20px; font-size: 0.85rem; font-weight: bold;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
 
         /* File Preview Area */
         .preview-box {
             padding: 8px 16px; background: #1e293b; font-size: 0.85rem; color: #38bdf8;
             display: none; align-items: center; justify-content: space-between; border-top: 1px solid #334155;
-            position: fixed; bottom: 65px; width: 100%; z-index: 5;
+            position: fixed; bottom: 70px; width: 100%; z-index: 5;
         }
 
         /* Bottom Input Controls */
         .chat-input-area {
-            display: flex; padding: 10px 12px; background: #0f172a; border-top: 1px solid #334155;
-            gap: 8px; align-items: center; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 10;
+            display: flex; padding: 10px 14px; background: #0f172a; border-top: 1px solid #334155;
+            gap: 10px; align-items: center; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 10;
         }
+        
         .chat-input-area input[type="text"] {
-            flex: 1; padding: 12px 14px; background: #1e293b; border: 1px solid #475569;
-            border-radius: 25px; color: #ffffff; outline: none; font-size: 0.95rem;
+            flex: 1; padding: 12px 16px; background: #1e293b; border: 1px solid #475569;
+            border-radius: 25px; color: #ffffff; outline: none; font-size: 0.95rem; min-width: 0;
         }
+        
         .btn { 
-            width: 42px; height: 42px; background: #334155; color: #ffffff; border: none; 
-            border-radius: 50%; cursor: pointer; font-size: 1.2rem; flex-shrink: 0; 
+            width: 40px; height: 40px; background: #334155; color: #ffffff; border: none; 
+            border-radius: 50%; cursor: pointer; font-size: 1.1rem; flex-shrink: 0; 
             display: flex; align-items: center; justify-content: center; 
         }
-        .btn-plus { background: #3b82f6; font-size: 1.4rem; font-weight: bold; }
-        .btn-send { width: auto; border-radius: 25px; padding: 0 18px; background: #2563eb; font-weight: 600; font-size: 0.9rem; }
+        .btn-plus { background: #3b82f6; font-size: 1.3rem; font-weight: bold; }
+        .btn-send { width: auto; border-radius: 25px; padding: 0 16px; background: #2563eb; font-weight: 600; font-size: 0.9rem; height: 40px; }
         .mic-active { background: #ef4444 !important; box-shadow: 0 0 10px #ef4444; }
 
         /* Key Input Modal */
@@ -74,8 +112,8 @@
 <div class="modal" id="keyModal" style="display: none;">
     <div class="modal-box">
         <h3>Welcome to Rudra AI</h3>
-        <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 5px;">Enter your free Gemini API Key to start:</p>
-        <input type="password" id="apiKeyInput" placeholder="Paste API Key here...">
+        <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 5px;">Enter your OpenRouter API Key (sk-or-v1-...):</p>
+        <input type="password" id="apiKeyInput" placeholder="Paste OpenRouter API Key...">
         <button class="new-chat-btn" style="width: 100%;" onclick="saveApiKey()">Save & Start</button>
     </div>
 </div>
@@ -95,7 +133,7 @@
     <div class="chat-header">
         <button class="icon-btn" onclick="toggleSidebar()">☰</button>
         <div class="header-title">⚡ Rudra AI ⚡</div>
-        <button class="icon-btn" onclick="startNewChat()">➕</button>
+        <button class="icon-btn speaker-btn" id="speakerBtn" onclick="toggleSpeech()" title="Stop/Mute Audio">🔊</button>
     </div>
     
     <div class="chat-box" id="chatBox"></div>
@@ -108,8 +146,8 @@
 
     <!-- Input Area -->
     <div class="chat-input-area">
-        <input type="file" id="fileInput" accept="image/*,application/pdf" style="display: none;" onchange="handleFileUpload(event)">
-        <button class="btn btn-plus" onclick="document.getElementById('fileInput').click()" title="Attach Photo or PDF">+</button>
+        <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileUpload(event)">
+        <button class="btn btn-plus" onclick="document.getElementById('fileInput').click()" title="Attach Photo">+</button>
         
         <input type="text" id="userInput" placeholder="Type or speak..." onkeypress="handleKeyPress(event)">
         
@@ -119,14 +157,18 @@
 </div>
 
 <script>
-    let API_KEY = localStorage.getItem("RUDRA_GEMINI_KEY") || "";
+    let API_KEY = localStorage.getItem("RUDRA_OPENROUTER_KEY") || "";
     const CREATOR_NAME = "Sintu Patel Rajbhar"; 
     const CREATOR_LOCATION = "Parsia Buzurg, Maharajganj, Uttar Pradesh";
-    const SYSTEM_INSTRUCTION = `Your name is Rudra AI. You were created by ${CREATOR_NAME} from ${CREATOR_LOCATION}. Only state your creator details if explicitly asked "Who created you?" or "तुम्हे किसने बनाया है?". Respond fluently in the user's language. Speak pure, accurate Hindi when replying in Hindi.`;
+    
+    const SYSTEM_INSTRUCTION = `Your name is Rudra AI. You were created by ${CREATOR_NAME} from ${CREATOR_LOCATION}. Only state your creator details if explicitly asked "Who created you?" or "तुम्हे किसने बनाया है?". Respond fluently and completely in the user's language. Speak pure, accurate Hindi when replying in Hindi. 
+    IMAGE GENERATION INSTRUCTION: You CAN generate and create photos! If the user asks for any image/photo/picture creation (e.g. "photo banao", "pari ki photo", "car image"), reply politely with a description and ALWAYS end your message with: "GENERATE_IMAGE: English prompt describing the image".
+    LOCATION INSTRUCTION: If user asks for places/maps, end with "MAP_LOCATION: Place Name".`;
 
     let currentChatId = Date.now();
     let chatSessions = JSON.parse(localStorage.getItem("RUDRA_CHAT_SESSIONS") || "{}");
     let attachedFile = null;
+    let isMuted = false;
 
     window.onload = () => {
         if (!API_KEY) {
@@ -140,14 +182,14 @@
         const key = document.getElementById("apiKeyInput").value.trim();
         if (key) {
             API_KEY = key;
-            localStorage.setItem("RUDRA_GEMINI_KEY", key);
+            localStorage.setItem("RUDRA_OPENROUTER_KEY", key);
             document.getElementById("keyModal").style.display = "none";
             startNewChat();
         }
     }
 
     function resetApiKey() {
-        localStorage.removeItem("RUDRA_GEMINI_KEY");
+        localStorage.removeItem("RUDRA_OPENROUTER_KEY");
         location.reload();
     }
 
@@ -157,9 +199,10 @@
     }
 
     function startNewChat() {
+        stopSpeech();
         currentChatId = Date.now();
         document.getElementById("chatBox").innerHTML = '';
-        appendMessage("Hello! I am Rudra. How can I help you today?", "ai-message");
+        appendMessage("नमस्ते! मैं रुद्र हूँ। आज मैं आपकी क्या सहायता कर सकता हूँ?", "ai-message");
         document.getElementById("sidebar").classList.remove("active");
         removeFile();
     }
@@ -177,6 +220,7 @@
     }
 
     function loadChat(id) {
+        stopSpeech();
         currentChatId = id;
         document.getElementById("chatBox").innerHTML = '';
         chatSessions[id].forEach(msg => appendMessage(msg.text, msg.sender));
@@ -188,10 +232,7 @@
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                attachedFile = {
-                    mimeType: file.type,
-                    data: reader.result.split(',')[1]
-                };
+                attachedFile = reader.result;
                 document.getElementById("filePreviewText").innerText = "📎 " + file.name;
                 document.getElementById("previewBox").style.display = "flex";
             };
@@ -216,6 +257,7 @@
         recognition.lang = 'hi-IN';
 
         recognition.onstart = () => { 
+            stopSpeech();
             isListening = true; 
             document.getElementById("micBtn").classList.add("mic-active"); 
         };
@@ -250,15 +292,57 @@
     }
 
     function speakText(text) {
+        if (isMuted) return;
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
+            
+            let cleanText = text.replace(/MAP_LOCATION:.*/g, '').replace(/GENERATE_IMAGE:.*/g, '');
+            cleanText = cleanText.replace(/[-_*#`~]/g, ' ');
+
+            const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'hi-IN';
+            
+            const btn = document.getElementById("speakerBtn");
+
+            utterance.onstart = () => {
+                btn.classList.add("speaking-active");
+                btn.innerText = "🔇";
+            };
+
+            utterance.onend = () => {
+                btn.classList.remove("speaking-active");
+                btn.innerText = "🔊";
+            };
+
+            utterance.onerror = () => {
+                btn.classList.remove("speaking-active");
+                btn.innerText = "🔊";
+            };
+
             window.speechSynthesis.speak(utterance);
         }
     }
 
+    function stopSpeech() {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const btn = document.getElementById("speakerBtn");
+            btn.classList.remove("speaking-active");
+            btn.innerText = isMuted ? "🔇" : "🔊";
+        }
+    }
+
+    function toggleSpeech() {
+        if (window.speechSynthesis.speaking) {
+            stopSpeech();
+        } else {
+            isMuted = !isMuted;
+            document.getElementById("speakerBtn").innerText = isMuted ? "🔇" : "🔊";
+        }
+    }
+
     async function sendMessage() {
+        stopSpeech();
         const input = document.getElementById("userInput");
         const text = input.value.trim();
         
@@ -274,55 +358,65 @@
 
         const loadingMsg = appendMessage("Thinking...", "ai-message");
 
-        // List of models to try in order (Auto-Fallback)
-        const modelsToTry = [
-            "gemini-2.5-flash",
-            "gemini-2.5-flash",
-            "gemini-1.5-flash",
-            "gemini-pro"
-        ];
-
-        let partsArray = [];
-        if (text) partsArray.push({ text: text });
+        let userContent = [];
+        if (text) userContent.push({ type: "text", text: text });
         if (currentFile) {
-            partsArray.push({
-                inline_data: {
-                    mime_type: currentFile.mimeType,
-                    data: currentFile.data
-                }
+            userContent.push({
+                type: "image_url",
+                image_url: { url: currentFile }
             });
         }
 
-        let success = false;
+        try {
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": window.location.href,
+                    "X-Title": "Rudra AI"
+                },
+                body: JSON.stringify({
+                    model: "google/gemini-2.5-flash",
+                    max_tokens: 3000,
+                    messages: [
+                        { role: "system", content: SYSTEM_INSTRUCTION },
+                        { role: "user", content: userContent.length === 1 && userContent[0].type === "text" ? text : userContent }
+                    ]
+                })
+            });
 
-        for (let modelName of modelsToTry) {
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-                        contents: [{ role: "user", parts: partsArray }]
-                    })
-                });
+            const data = await response.json();
 
-                const data = await response.json();
+            if (data.choices && data.choices[0].message) {
+                let aiReply = data.choices[0].message.content;
+                let extraHTML = "";
 
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    const aiReply = data.candidates[0].content.parts[0].text;
-                    loadingMsg.innerText = aiReply;
-                    saveMessageToHistory(aiReply, "ai-message");
-                    speakText(aiReply);
-                    success = true;
-                    break; // Request succeeded, exit loop!
+                // Handle Image Generation Trigger
+                if (aiReply.includes("GENERATE_IMAGE:")) {
+                    const prompt = aiReply.split("GENERATE_IMAGE:")[1].trim();
+                    aiReply = aiReply.replace(/GENERATE_IMAGE:.*/g, '');
+                    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
+                    extraHTML += `<br><img class="generated-img" src="${imageUrl}" alt="AI Generated Image">`;
                 }
-            } catch (e) {
-                console.log(`Model ${modelName} failed, trying next...`);
-            }
-        }
 
-        if (!success) {
-            loadingMsg.innerText = "Error: Invalid API Key or all Gemini models failed to respond. Please check your key or try Chrome browser directly.";
+                // Handle Google Maps Trigger
+                if (aiReply.includes("MAP_LOCATION:")) {
+                    const placeName = aiReply.split("MAP_LOCATION:")[1].trim();
+                    aiReply = aiReply.replace(/MAP_LOCATION:.*/g, '');
+                    extraHTML += `<br><a class="map-btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(placeName)}" target="_blank">📍 Open in Google Maps</a>`;
+                }
+
+                loadingMsg.innerHTML = aiReply + extraHTML;
+                saveMessageToHistory(aiReply + extraHTML, "ai-message");
+                speakText(aiReply);
+            } else if (data.error) {
+                loadingMsg.innerText = "Error: " + data.error.message;
+            } else {
+                loadingMsg.innerText = "Error: Invalid API Key or Response from OpenRouter.";
+            }
+        } catch (e) {
+            loadingMsg.innerText = "Error connecting to OpenRouter API.";
         }
     }
 
@@ -330,7 +424,7 @@
         const box = document.getElementById("chatBox");
         const msg = document.createElement("div");
         msg.className = `message ${className}`;
-        msg.innerText = text;
+        msg.innerHTML = text;
         box.appendChild(msg);
         box.scrollTop = box.scrollHeight;
         return msg;
@@ -346,5 +440,3 @@
 </script>
 </body>
 </html>
-
-
